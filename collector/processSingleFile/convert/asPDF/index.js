@@ -10,22 +10,35 @@ const PDFLoader = require("./PDFLoader");
 const OCRLoader = require("../../../utils/OCRLoader");
 
 async function asPdf({ fullFilePath = "", filename = "", options = {} }) {
-  const pdfLoader = new PDFLoader(fullFilePath, {
-    splitPages: true,
-  });
-
   console.log(`-- Working ${filename} --`);
-  const pageContent = [];
-  let docs = await pdfLoader.load();
-
-  if (docs.length === 0) {
-    console.log(
-      `[asPDF] No text content found for ${filename}. Will attempt OCR parse.`
-    );
+  let docs = [];
+  
+  // 檢查是否啟用強制 OCR
+  if (options?.forceOcr === true) {
+    console.log(`[asPDF] Force OCR enabled for ${filename}. Skipping text extraction.`);
+    // 直接使用 OCR 處理 PDF
     docs = await new OCRLoader({
       targetLanguages: options?.ocr?.langList,
     }).ocrPDF(fullFilePath);
+  } else {
+    // 正常流程：先嘗試提取文本，如果失敗再使用 OCR
+    const pdfLoader = new PDFLoader(fullFilePath, {
+      splitPages: true,
+    });
+    
+    docs = await pdfLoader.load();
+
+    if (docs.length === 0) {
+      console.log(
+        `[asPDF] No text content found for ${filename}. Will attempt OCR parse.`
+      );
+      docs = await new OCRLoader({
+        targetLanguages: options?.ocr?.langList,
+      }).ocrPDF(fullFilePath);
+    }
   }
+  
+  const pageContent = [];
 
   for (const doc of docs) {
     console.log(

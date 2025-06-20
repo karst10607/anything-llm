@@ -26,16 +26,20 @@ class CollectorApi {
 
   /**
    * Attach options to the request passed to the collector API
+   * @param {Object} additionalOptions - Additional options to include
+   * @param {boolean} additionalOptions.forceOcr - Whether to force OCR for PDF files
    * @returns {CollectorOptions}
    */
-  #attachOptions() {
+  #attachOptions(additionalOptions = {}) {
     return {
       whisperProvider: process.env.WHISPER_PROVIDER || "local",
       WhisperModelPref: process.env.WHISPER_MODEL_PREF,
       openAiKey: process.env.OPEN_AI_KEY || null,
       ocr: {
         langList: process.env.TARGET_OCR_LANG || "eng",
+        ...additionalOptions.ocr,
       },
+      forceOcr: additionalOptions.forceOcr || false,
       runtimeSettings: {
         allowAnyIp: process.env.COLLECTOR_ALLOW_ANY_IP ?? "false",
       },
@@ -65,14 +69,16 @@ class CollectorApi {
    * Process a document
    * - Will append the options to the request body
    * @param {string} filename - The filename of the document to process
+   * @param {Object} customOptions - Custom options to pass to the collector
+   * @param {boolean} customOptions.forceOcr - Whether to force OCR for PDF files
    * @returns {Promise<Object>} - The response from the collector API
    */
-  async processDocument(filename = "") {
+  async processDocument(filename = "", customOptions = {}) {
     if (!filename) return false;
 
     const data = JSON.stringify({
       filename,
-      options: this.#attachOptions(),
+      options: this.#attachOptions(customOptions),
     });
 
     return await fetch(`${this.endpoint}/process`, {

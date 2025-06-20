@@ -134,8 +134,11 @@ function workspaceEndpoints(app) {
           return;
         }
 
+        // 從請求體中獲取 forceOcr 參數，如果存在則轉換為布爾值
+        const forceOcr = request.body && request.body.forceOcr === 'true';
+        
         const { success, reason } =
-          await Collector.processDocument(originalname);
+          await Collector.processDocument(originalname, { forceOcr });
         if (!success) {
           response.status(500).json({ success: false, error: reason }).end();
           return;
