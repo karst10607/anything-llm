@@ -883,6 +883,7 @@ function workspaceEndpoints(app) {
     async function (request, response) {
       try {
         const { slug = null } = request.params;
+        const { ocrLanguages } = request.body;
         const user = await userFromSession(request, response);
         const currWorkspace = multiUserMode(response)
           ? await Workspace.getWithUser(user, { slug })
@@ -908,8 +909,18 @@ function workspaceEndpoints(app) {
           return;
         }
 
+        const customOptions = {};
+        
+        // Add OCR language options if provided
+        if (ocrLanguages) {
+          customOptions.ocr = {
+            langList: ocrLanguages
+          };
+          customOptions.forceOcr = true;
+        }
+        
         const { success, reason, documents } =
-          await Collector.processDocument(originalname);
+          await Collector.processDocument(originalname, customOptions);
         if (!success || documents?.length === 0) {
           response.status(500).json({ success: false, error: reason }).end();
           return;

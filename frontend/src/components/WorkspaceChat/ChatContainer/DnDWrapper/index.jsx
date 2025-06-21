@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import DndIcon from "./dnd-icon.png";
 import Workspace from "@/models/workspace";
 import useUser from "@/hooks/useUser";
+import LanguageSelector from "../LanguageSelector";
 
 export const DndUploaderContext = createContext();
 export const REMOVE_ATTACHMENT_EVENT = "ATTACHMENT_REMOVE";
@@ -29,6 +30,7 @@ export function DnDFileUploaderProvider({ workspace, children }) {
   const [files, setFiles] = useState([]);
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [selectedLanguages, setSelectedLanguages] = useState(["eng"]);
   const { user } = useUser();
 
   useEffect(() => {
@@ -180,6 +182,7 @@ export function DnDFileUploaderProvider({ workspace, children }) {
 
       const formData = new FormData();
       formData.append("file", attachment.file, attachment.file.name);
+      formData.append("ocrLanguages", selectedLanguages.join(','));
       promises.push(
         Workspace.uploadAndEmbedFile(workspace.slug, formData).then(
           ({ response, data }) => {
@@ -213,7 +216,16 @@ export function DnDFileUploaderProvider({ workspace, children }) {
 
   return (
     <DndUploaderContext.Provider
-      value={{ files, ready, dragging, setDragging, onDrop, parseAttachments }}
+      value={{ 
+        files, 
+        ready, 
+        dragging, 
+        setDragging, 
+        onDrop, 
+        parseAttachments, 
+        selectedLanguages, 
+        setSelectedLanguages 
+      }}
     >
       {children}
     </DndUploaderContext.Provider>
@@ -221,7 +233,7 @@ export function DnDFileUploaderProvider({ workspace, children }) {
 }
 
 export default function DnDFileUploaderWrapper({ children }) {
-  const { onDrop, ready, dragging, setDragging } =
+  const { onDrop, ready, dragging, setDragging, selectedLanguages, setSelectedLanguages } =
     useContext(DndUploaderContext);
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -266,6 +278,12 @@ export default function DnDFileUploaderWrapper({ children }) {
         </div>
       </div>
       <input id="dnd-chat-file-uploader" {...getInputProps()} />
+      <div className="absolute bottom-20 right-4 z-10">
+        <LanguageSelector 
+          selectedLanguages={selectedLanguages}
+          onChange={setSelectedLanguages}
+        />
+      </div>
       {children}
     </div>
   );
